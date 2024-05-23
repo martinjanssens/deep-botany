@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # Linear profile, no fixed shear, and African Easterly Jet model => Use for u?
 def linv_aej(z, u0, dudz, ujet, href=4000, hsca=6000):
     u = u0 + dudz*z
-    aej = -ujet*np.cos(np.pi*(z - href)/hsca)
+    aej = -ujet*np.cos(np.pi*(z - href)/hsca)**2
     aej[z<=href-0.5*hsca] = 0
     aej[z>=href+0.5*hsca] = 0
     return u + aej
@@ -59,7 +59,7 @@ def relax(z, prof_ideal, prof_ref, href=9e3, hsca=3e3):
 if __name__ == '__main__':
 
     # load era5 profiles, averaged over a mesoscale box and ~1200 summer days
-    era5_env_mn = xr.open_dataset('era5_env_mn.nc')
+    era5_env_mn = xr.open_dataset('data/era5_env_mn.nc')
     
     # Surface pressure and surface theta_l
     thls = era5_env_mn['sst']*(1e5/era5_env_mn['sp'])**(2./7)
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     
     axs[3].legend(bbox_to_anchor=(1,1), loc='best')
     
-    plt.savefig('prof-test.pdf',bbox_inches='tight')
+    plt.savefig('data/figures/prof-test.pdf',bbox_inches='tight')
     
     # TODO:
     # Settle on horizontal/vertical advection
