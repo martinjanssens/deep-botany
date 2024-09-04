@@ -1,4 +1,6 @@
 .ipynb_checkpoints/
 __pycache__/
 data/era5_env.nc
+data/era5_env_n.nc
+data/era5_env_s.nc
 *.pdf

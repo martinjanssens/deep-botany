@@ -88,7 +88,7 @@ def T_and_ql(thl, qt, pres):
         T = np.zeros_like(thl)
         for i in range(len(thl)):
             try:
-                T[i] = scipy.optimize.brentq(thl_err_scalar, 200, 330, xtol=1e-3, args = (qt[i], pres[i], thl[i]))
+                T[i] = scipy.optimize.brentq(thl_err_scalar, 160, 330, xtol=1e-3, args = (qt[i], pres[i], thl[i]))
             except:
                 print('T, ql calculation failed, assigning nan')
                 T[i] = np.nan
