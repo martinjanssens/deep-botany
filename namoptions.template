@@ -1,0 +1,174 @@
+&RUN
+iexpnr     =  001
+lwarmstart = .false.
+startfile  = 'initd_latest_x000y000.001'
+runtime    = 172800
+trestart   = 0
+dtmax      = 5.
+ladaptive  = .true.
+irandom    =  43
+krand      =  5
+randthl    =  0.1
+randqt     =  2.5e-5
+courant    = .5
+peclet     = .1
+loutdirs   = .true.
+nprocx     = 6 
+nprocy     = 8
+/
+
+&DOMAIN
+itot       =  384
+jtot       =  384
+kmax       =  200
+ksp        =  175
+
+xsize      =  38400.
+ysize      =  38400.
+
+xlat       = 7.5
+xlon       = 334
+xyear      = 2024
+xday       = 214 ! Aug 1 - ERA5 mean
+xtime      = 0.0
+/
+
+&PHYSICS
+igrw_damp  =  2
+lfast_thermo = .true.
+iradiation =  4
+timerad    =  60
+isurf      =  2
+ps         =  101339.5
+thls       =  299.9266
+ustin      =  0.32
+lcoriol    = .true.
+ltimedep   = .false.
+/
+
+&NAMRADIATION
+!lCnstZenith = .true.
+lCnstAlbedo = .true.
+!cnstZenith = 42.05
+usero3     = .true.
+co2_fraction  = 414.34e-6
+ch4_fraction  = 1879e-9
+n2o_fraction  = 332.8e-9
+/
+&NAMSURFACE
+z0         =  1.6e-4 ! MJ: Roughness heights from Botany 
+z0mav      =  1.6e-4
+z0hav      =  3.2e-5
+albedoav   =  0.07
+lmostlocal =  .true.
+/
+&DYNAMICS
+cu         =  0 ! MJ: Consider modifying to mean wind for better block stats
+cv         =  0
+
+iadv_mom   =  6
+iadv_tke   =  5
+iadv_thl   =  5
+iadv_qt    =  5
+iadv_sv    =  7
+/
+&NAMMICROPHYSICS
+imicro     = 6
+l_sb       = .true.
+l_sedc     = .true.
+l_rain     = .true.
+l_mur_cst  =.false.
+mur_cst    = 0
+Nc_0       = 100e6
+sig_g      = 1.2
+courantp   = 0.7
+/
+&NAMNUDGE
+lnudge   = .true.
+/
+&NAMCHECKSIM
+tcheck     = 0
+/
+&NAMSAMPLING
+dtav       = 60
+timeav     = 1800
+lsamptend  = .true.
+lsamptendu = .false.
+lsamptendv = .false.
+lsamptendw = .false.
+lsamptendthl = .true.
+lsamptendqt = .true.
+lsamptendqr = .false.
+lsamptendnr = .false.
+ltendleib = .false.
+lprocblock = .true.
+ltenddec = .true.
+/
+&NAMBULKMICROSTAT
+lmicrostat = .true.
+timeav     = 1800
+dtav       = 60.
+/
+&NAMSIMPLEICESTAT
+lmicrostat = .true.
+timeav     = 1800
+dtav       = 60.
+/
+
+&NAMTIMESTAT
+ltimestat  = .true.
+dtav       = 1800.
+/
+&NAMCROSSSECTION
+lcross     = .true.
+lxz        = .false.
+lyz        = .false.
+dtav       = 600
+crossheight = 1
+/
+&NAMCAPE
+lcape      = .true.
+dtav       = 300
+/
+&NAMGENSTAT
+lstat      = .true.
+dtav       = 60
+timeav     = 1800
+/
+&NAMSTATTEND
+dtav       = 30
+ltend      = .false.
+/
+&NAMRADSTAT
+lstat = .true.
+dtav = 60
+timeav = 1800
+lradclearair = .true.
+/
+&NAMRADFIELD
+lradfield = .true.
+dtav  = 3600
+timeav = 3600
+/
+&NAMBUDGET
+lbudget = .false.
+dtav    = 60
+timeav  = 600.
+/
+&NAMNETCDFSTATS
+lnetcdf     = .true.
+lclassic    = .true.
+lsync       = .false.
+/
+&SOLVER
+solver_id = 100 ! FFTW
+/
+&NAMFIELDDUMP
+lfielddump  = .false.
+dtav        = 21600
+/
+&TIMER
+ltimer = .true.
+ltimer_print = .true.
+ltimer_write = .true.
+/
