@@ -233,7 +233,7 @@ def setup_run(ind, pars, experiment='001'):
     #f.close()
 
     # Append two time instances - one at start, one after end of simulation
-    with open(nudge_out, 'ab') as f:
+    with open(nudge_out, 'wb') as f:
         np.savetxt(f, nudge_profs, fmt='%+10.10e', comments='',
                    header='\n      z (m)          factor (-)         u (m s-1)         v (m s-1)         w (m s-1)          thl (K)        qt (kg kg-1)    \n# 0.00000000E+00')
         np.savetxt(f, nudge_profs, fmt='%+10.10e', comments='',
