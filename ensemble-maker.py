@@ -259,14 +259,24 @@ center = {v : (ranges[v][0] + ranges[v][1])/2 for v in ranges.keys()}
 center['Nc'] = Nc_default
 ensemble.append(center)
 
-# cube center, S domain
-center_s = center.copy()
-center_s['lat'] =  ranges['lat'][0]
+center_s = {
+            'thls':   299.926558,
+            'dthllt':   0.496936,
+            'hqt':    4059.26059,
+            'u0':       3.414611,
+            'ujet':     2.896884,
+            'Nc' :    Nc_default,
+}
 ensemble.append(center_s)
 
-# cube center, N domain
-center_n = center.copy()
-center_n['lat'] =  ranges['lat'][1]
+center_n = {
+            'thls':   299.511256,
+            'dthllt':   2.354826,
+            'hqt':   3598.007748,
+            'u0':       1.796379,
+            'ujet':      6.52969,
+            'Nc' :    Nc_default,
+}
 ensemble.append(center_n)
 
 # add corners
@@ -289,13 +299,12 @@ for lat in ranges['lat']:
 
 # Add sweeps. For now only two points for each variable - min and max from the ranges.
 # lat is handled separately: each sweep point is added for the N and S domain
-for lat in ranges['lat']: # for every sweep point, do it for N and S domains
+for c in center_s, center_n: # for every sweep point, do it for N and S domains
     for var in (sweeps.keys()):
         if var != 'lat': # don't sweep latitude here
             for val in sweeps[var]:
-                m = center.copy()
+                m = c.copy()
                 m[var] = val
-                m['lat'] = lat
                 ensemble.append(m)
 
 df = pd.DataFrame(ensemble)
