@@ -28,7 +28,7 @@ zlowmax = 3e3
 dzlow   = 40
 nztot   = 200
 r0      = 1.02
-zlow1max= 15e3 
+zlow1max= 15e3
 r1      = 1.1
 dzmax   = 500.
 
@@ -41,13 +41,10 @@ ranges = {
     'u0':       [-5,      10],
     'ujet':     [0,       10],
 }
-Nc_default = 100
+Nc_default = 100e6 # cloud drops per m3
 
 sweeps = ranges.copy()
-sweeps['Nc'] =  [20,    1000]
-
-
-
+sweeps['Nc'] =  [20e6,    1000e6] # per m3
 
 # for the top of the domain, relax profiles back to the reference state using ERA5, which is
 # - the southern domain mean upper troposphere for q/theta_l
@@ -80,27 +77,26 @@ def _nudge_atan(x, a=5, b=2, c=20, lev_max_change=5000, end=3600*6, test_plot=Fa
 
 def create_nudging(zf, thl, qt, u, v, nudge_params):
     """
-    Makes a nudging input file, based on 
+    Makes a nudging input file, based on
     profiles to nudge towards of
     - zf
     - thl
     - qt
     - u
     - v
-    nudge_params is a tuple that contains the input parameters to Alessandro's 
+    nudge_params is a tuple that contains the input parameters to Alessandro's
     arctangent nudging function.
     """
-    
+
     zero = np.zeros(zf.shape)
     (a,b,c,z_max_change,tnudge_ft) = nudge_params
-    
-    # Nudging factor with height; 
+
+    # Nudging factor with height;
     # is multiplied with nudging time (tnudgefac) from namelist;
     # here we set tnudgefac=1 -> Then this is the nudging time in seconds
     nudgefac = _nudge_atan(zf,a,b,c,z_max_change,tnudge_ft)
-    
     out_profs = np.stack((zf,nudgefac,u,v,zero,thl,qt)).T
-    
+
     return out_profs
 
 
@@ -109,7 +105,7 @@ def create_backrad(data_path, out_dir_rad, experiment='001'):
     Create backrad.inp.001.nc
     Since upper troposphere in all simulations is from the same ERA5 profile, we can use the same profile to extrapolate
     immediately above the TOM, without creating large spurious gradients, in all Botany simulations.
-    
+
     Use from RCEMIP:
     - that the TOA is at 50 Pa
     - the function for o3(pres)
@@ -154,12 +150,12 @@ def create_backrad(data_path, out_dir_rad, experiment='001'):
 
     # Create backrad
     backrad_out = os.path.join(out_dir_rad,'backrad.inp.'+experiment+'.nc')
-    
+
     nc_file = nc.Dataset(backrad_out, 'w')
     nc_file.title = 'Background radiation input for deep-botany simulations, from ERA5'
 
     dims = nc_file.createDimension('lev', pres_br.size)
-    
+
     p_var = nc_file.createVariable('lev', 'f4', ('lev'))
     T_var = nc_file.createVariable('T',   'f4', ('lev'))
     q_var = nc_file.createVariable('q',   'f4', ('lev'))
@@ -169,7 +165,7 @@ def create_backrad(data_path, out_dir_rad, experiment='001'):
     T_var.units = 'K'
     q_var.units = 'kg/kg'
     o_var.units = '-'
-    
+
     p_var[:] = pres_br
     T_var[:] = T_br
     q_var[:] = q_br
@@ -189,7 +185,7 @@ era5_allplev = era5_allplev.set_coords(['zm']).swap_dims({'level':'zm'})
 era5_allplev['pres'] = era5_allplev['level'] * 100
 era5_allplev['theta_l']  = (1e5/era5_allplev['pres'])**(2/7)*(era5_allplev['t'])
 era5_allplev_mn = era5_allplev.mean(['time','latitude','longitude'])
-era5_ref = era5_allplev_mn.copy(deep=True)  
+era5_ref = era5_allplev_mn.copy(deep=True)
 
 # Interpolate pressure to model grid for RH calculations
 pres = (era5_allplev_mn['level']*100)
@@ -231,13 +227,13 @@ def setup_run(ind, pars, experiment='001'):
 
     # nudge.inp
     nudge_profs = create_nudging(zf, thl, qt, u, v, nudge_params)
-    
+
     nudge_out = os.path.join(run_dir, 'nudge.inp.'+experiment)
     #f = open(nudge_out, 'w')
     #f.close()
-    
+
     # Append two time instances - one at start, one after end of simulation
-    with open(nudge_out, 'ab') as f:
+    with open(nudge_out, 'wb') as f:
         np.savetxt(f, nudge_profs, fmt='%+10.10e', comments='',
                    header='\n      z (m)          factor (-)         u (m s-1)         v (m s-1)         w (m s-1)          thl (K)        qt (kg kg-1)    \n# 0.00000000E+00')
         np.savetxt(f, nudge_profs, fmt='%+10.10e', comments='',
@@ -255,7 +251,7 @@ def setup_run(ind, pars, experiment='001'):
     nml.write(os.path.join(run_dir, 'namoptions.'+experiment), force=True)
 
 
-    
+
 ensemble = []
 
 # cube center - note also intermediate latitude
@@ -263,14 +259,24 @@ center = {v : (ranges[v][0] + ranges[v][1])/2 for v in ranges.keys()}
 center['Nc'] = Nc_default
 ensemble.append(center)
 
-# cube center, S domain
-center_s = center.copy()
-center_s['lat'] =  ranges['lat'][0]
+center_s = {
+            'thls':   299.926558,
+            'dthllt':   0.496936,
+            'hqt':    4059.26059,
+            'u0':       3.414611,
+            'ujet':     2.896884,
+            'Nc' :    Nc_default,
+}
 ensemble.append(center_s)
 
-# cube center, N domain
-center_n = center.copy()
-center_n['lat'] =  ranges['lat'][1]
+center_n = {
+            'thls':   299.511256,
+            'dthllt':   2.354826,
+            'hqt':   3598.007748,
+            'u0':       1.796379,
+            'ujet':      6.52969,
+            'Nc' :    Nc_default,
+}
 ensemble.append(center_n)
 
 # add corners
@@ -290,18 +296,16 @@ for lat in ranges['lat']:
                                 }
                         ensemble.append(pars)
 
-                        
+
 # Add sweeps. For now only two points for each variable - min and max from the ranges.
 # lat is handled separately: each sweep point is added for the N and S domain
-for lat in ranges['lat']: # for every sweep point, do it for N and S domains
+for c in center_s, center_n: # for every sweep point, do it for N and S domains
     for var in (sweeps.keys()):
         if var != 'lat': # don't sweep latitude here
             for val in sweeps[var]:
-                m = center.copy()
+                m = c.copy()
                 m[var] = val
-                m['lat'] = lat
                 ensemble.append(m)
-        
 
 df = pd.DataFrame(ensemble)
 
