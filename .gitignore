@@ -3,4 +3,6 @@ __pycache__/
 data/era5_env.nc
 data/era5_env_n.nc
 data/era5_env_s.nc
+data/era5_ns_h-le.nc
+data/era5_ns_pr.nc
 *.pdf
