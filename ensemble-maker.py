@@ -298,14 +298,24 @@ for lat in ranges['lat']:
 
 
 # Add sweeps. For now only two points for each variable - min and max from the ranges.
+
+for var in (sweeps.keys()):
+    for val in sweeps[var]:
+        m = center.copy()
+        m[var] = val
+        ensemble.append(m)
+
+# Sweeps around the N and S domain centers - not done for now
 # lat is handled separately: each sweep point is added for the N and S domain
-for c in center_s, center_n: # for every sweep point, do it for N and S domains
-    for var in (sweeps.keys()):
-        if var != 'lat': # don't sweep latitude here
-            for val in sweeps[var]:
-                m = c.copy()
-                m[var] = val
-                ensemble.append(m)
+#for c in center_s, center_n: # for every sweep point, do it for N and S domains
+#    for var in (sweeps.keys()):
+#        if var != 'lat': # don't sweep latitude here
+#            for val in sweeps[var]:
+#                m = c.copy()
+#                m[var] = val
+#                ensemble.append(m)
+
+
 
 df = pd.DataFrame(ensemble)
 
