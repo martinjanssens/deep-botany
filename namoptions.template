@@ -73,7 +73,7 @@ iadv_qt    =  5
 iadv_sv    =  7
 /
 &NAMMICROPHYSICS
-imicro     = 6
+imicro     = 5
 l_sb       = .true.
 l_sedc     = .true.
 l_rain     = .true.
@@ -106,18 +106,18 @@ ltenddec = .true.
 /
 &NAMBULKMICROSTAT
 lmicrostat = .true.
-timeav     = 1800
+timeav     = 600
 dtav       = 60.
 /
-&NAMSIMPLEICESTAT
-lmicrostat = .true.
-timeav     = 1800
-dtav       = 60.
-/
+!&NAMSIMPLEICESTAT
+!lmicrostat = .true.
+!timeav     = 1800
+!dtav       = 60.
+!/
 
 &NAMTIMESTAT
 ltimestat  = .true.
-dtav       = 1800.
+dtav       = 60.
 /
 &NAMCROSSSECTION
 lcross     = .true.
@@ -133,7 +133,7 @@ dtav       = 300
 &NAMGENSTAT
 lstat      = .true.
 dtav       = 60
-timeav     = 1800
+timeav     = 600
 /
 &NAMSTATTEND
 dtav       = 30
@@ -142,7 +142,7 @@ ltend      = .false.
 &NAMRADSTAT
 lstat = .true.
 dtav = 60
-timeav = 1800
+timeav = 600
 lradclearair = .true.
 /
 &NAMRADFIELD

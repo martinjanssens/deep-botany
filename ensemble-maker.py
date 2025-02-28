@@ -33,14 +33,16 @@ r1      = 1.1
 dzmax   = 500.
 
 # Parameter ranges, manually adjusted from values determined in Hypercube-designer.ipynb
+## Second iteration of manual adjustments, after small cube attempt
 ranges = {
     'lat':      [7.5,   12.5],
-    'thls':     [298.5,  301],
-    'dthllt':   [0.0,    4.0],
-    'hqt':      [2700,  4750],
+    'thls':     [299,  301.5],
+    'dthllt':   [-0.5,   2.0],
+    'hqt':      [3000,  4750],
     'u0':       [-5,      10],
     'ujet':     [0,       10],
 }
+
 Nc_default = 100e6 # cloud drops per m3
 
 sweeps = ranges.copy()
@@ -197,6 +199,13 @@ pres_zf = pres.interp(zm=zf,kwargs={"fill_value": "extrapolate"})
 
 create_backrad(data_path, ensemble_path)
 
+# Large-scale horizontal moisture advection
+qadv0 = 7e-9
+dqadvdz = qadv0/4000
+qadv_mod = -qadv0 + dqadvdz*zf
+qadv_mod = np.clip(qadv_mod, a_min=None, a_max=0)
+
+
 
 def compute_profiles(pars):
     thl = linml_sl(zf, pars['thls'], pars['dthllt'])
@@ -220,7 +229,7 @@ def setup_run(ind, pars, experiment='001'):
                header='\n    height         thl          qt            u            v          TKE')
 
     # lscale.inp - no large-scale forcing other than nudging
-    lscale = np.stack((zf,u,v,zero,zero,zero,zero,zero)).T
+    lscale = np.stack((zf,u,v,zero,qadv_mod,zero,zero,zero)).T
     lscale_out = os.path.join(run_dir, 'lscale.inp.'+experiment)
     np.savetxt(lscale_out, lscale, fmt='%12.6g',
                header='\n    height           ug           vg         wfls      dqtdxls      dqtdyls      dqtdtls      dthlrad')
