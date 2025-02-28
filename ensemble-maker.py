@@ -275,6 +275,7 @@ center_s = {
             'u0':       3.414611,
             'ujet':     2.896884,
             'Nc' :    Nc_default,
+            'lat' :          7.5,
 }
 ensemble.append(center_s)
 
@@ -285,6 +286,7 @@ center_n = {
             'u0':       1.796379,
             'ujet':      6.52969,
             'Nc' :    Nc_default,
+            'lat' :         12.5,
 }
 ensemble.append(center_n)
 
@@ -331,7 +333,7 @@ df = pd.DataFrame(ensemble)
 # if some sweeps added duplicate points, remove them now
 df.drop_duplicates(inplace=True)
 
-#print(df.to_string())
+print(df.to_string())
 df.to_csv(ensemble_path+'/parameters.csv')
 
 #generate profiles
