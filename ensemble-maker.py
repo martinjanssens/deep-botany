@@ -229,7 +229,7 @@ def setup_run(ind, pars, experiment='001'):
                header='\n    height         thl          qt            u            v          TKE')
 
     # lscale.inp - no large-scale forcing other than nudging
-    lscale = np.stack((zf,u,v,zero,qadv_mod,zero,zero,zero)).T
+    lscale = np.stack((zf,u,v,zero,zero,zero,qadv_mod,zero)).T
     lscale_out = os.path.join(run_dir, 'lscale.inp.'+experiment)
     np.savetxt(lscale_out, lscale, fmt='%12.6g',
                header='\n    height           ug           vg         wfls      dqtdxls      dqtdyls      dqtdtls      dthlrad')
