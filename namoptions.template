@@ -56,9 +56,11 @@ ch4_fraction  = 1879e-9
 n2o_fraction  = 332.8e-9
 /
 &NAMSURFACE
-z0         =  1.6e-4 ! MJ: Roughness heights from Botany 
-z0mav      =  1.6e-4
-z0hav      =  3.2e-5
+!z0         =  1.6e-4 ! MJ: Roughness heights from Botany 
+!z0mav      =  1.6e-4
+!z0hav      =  3.2e-5
+z0mav      =  2e-4     ! Roughness heights from RCEMIP
+z0hav      =  2e-4
 albedoav   =  0.07
 lmostlocal =  .true.
 /
@@ -66,10 +68,10 @@ lmostlocal =  .true.
 cu         =  0 ! MJ: Consider modifying to mean wind for better block stats
 cv         =  0
 
-iadv_mom   =  6
-iadv_tke   =  5
-iadv_thl   =  5
-iadv_qt    =  5
+iadv_mom   =  62
+iadv_tke   =  52
+iadv_thl   =  52
+iadv_qt    =  52
 iadv_sv    =  7
 /
 &NAMMICROPHYSICS

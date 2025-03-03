@@ -199,13 +199,6 @@ pres_zf = pres.interp(zm=zf,kwargs={"fill_value": "extrapolate"})
 
 create_backrad(data_path, ensemble_path)
 
-# Large-scale horizontal moisture advection
-qadv0 = 7e-9
-dqadvdz = qadv0/4000
-qadv_mod = -qadv0 + dqadvdz*zf
-qadv_mod = np.clip(qadv_mod, a_min=None, a_max=0)
-
-
 
 def compute_profiles(pars):
     thl = linml_sl(zf, pars['thls'], pars['dthllt'])
@@ -228,7 +221,16 @@ def setup_run(ind, pars, experiment='001'):
     np.savetxt(profile_out, prof, fmt='%12.6g',
                header='\n    height         thl          qt            u            v          TKE')
 
-    # lscale.inp - no large-scale forcing other than nudging
+    # lscale.inp - no large-scale forcing other than nudging and optionally qt advection
+
+    # Large-scale horizontal moisture advection
+    qadv0 = pars['qadv0'] if 'qadv0' in pars else 0
+    print(f'qadv0 = {qadv0}')
+    # qadv0 = 7e-9   # used 7e-9 in ensemble-2, now default to 0
+    dqadvdz = qadv0/4000
+    qadv_mod = -qadv0 + dqadvdz*zf
+    qadv_mod = np.clip(qadv_mod, a_min=None, a_max=0)
+
     lscale = np.stack((zf,u,v,zero,zero,zero,qadv_mod,zero)).T
     lscale_out = os.path.join(run_dir, 'lscale.inp.'+experiment)
     np.savetxt(lscale_out, lscale, fmt='%12.6g',
@@ -266,6 +268,7 @@ ensemble = []
 # cube center - note also intermediate latitude
 center = {v : (ranges[v][0] + ranges[v][1])/2 for v in ranges.keys()}
 center['Nc'] = Nc_default
+center['qadv0'] = 0
 ensemble.append(center)
 
 center_s = {
@@ -276,6 +279,7 @@ center_s = {
             'ujet':     2.896884,
             'Nc' :    Nc_default,
             'lat' :          7.5,
+            'qadv0' :          0,
 }
 ensemble.append(center_s)
 
@@ -287,6 +291,7 @@ center_n = {
             'ujet':      6.52969,
             'Nc' :    Nc_default,
             'lat' :         12.5,
+            'qadv0' :          0,
 }
 ensemble.append(center_n)
 
@@ -304,6 +309,7 @@ for lat in ranges['lat']:
                                 'u0': u0,
                                 'ujet' : ujet,
                                 'Nc' : Nc_default,
+                                'qadv0' : 0,
                                 }
                         ensemble.append(pars)
 
@@ -315,6 +321,11 @@ for var in (sweeps.keys()):
         m = center.copy()
         m[var] = val
         ensemble.append(m)
+
+# sweep qadv0 (only one point)
+m = center.copy()
+m['qadv0'] = 7e-9
+ensemble.append(m)
 
 # Sweeps around the N and S domain centers - not done for now
 # lat is handled separately: each sweep point is added for the N and S domain
