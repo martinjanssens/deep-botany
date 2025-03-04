@@ -33,14 +33,16 @@ r1      = 1.1
 dzmax   = 500.
 
 # Parameter ranges, manually adjusted from values determined in Hypercube-designer.ipynb
+## Second iteration of manual adjustments, after small cube attempt
 ranges = {
     'lat':      [7.5,   12.5],
-    'thls':     [298.5,  301],
-    'dthllt':   [0.0,    4.0],
-    'hqt':      [2700,  4750],
+    'thls':     [299,  301.5],
+    'dthllt':   [-0.5,   2.0],
+    'hqt':      [3000,  4750],
     'u0':       [-5,      10],
     'ujet':     [0,       10],
 }
+
 Nc_default = 100e6 # cloud drops per m3
 
 sweeps = ranges.copy()
@@ -219,8 +221,17 @@ def setup_run(ind, pars, experiment='001'):
     np.savetxt(profile_out, prof, fmt='%12.6g',
                header='\n    height         thl          qt            u            v          TKE')
 
-    # lscale.inp - no large-scale forcing other than nudging
-    lscale = np.stack((zf,u,v,zero,zero,zero,zero,zero)).T
+    # lscale.inp - no large-scale forcing other than nudging and optionally qt advection
+
+    # Large-scale horizontal moisture advection
+    qadv0 = pars['qadv0'] if 'qadv0' in pars else 0
+    print(f'qadv0 = {qadv0}')
+    # qadv0 = 7e-9   # used 7e-9 in ensemble-2, now default to 0
+    dqadvdz = qadv0/4000
+    qadv_mod = -qadv0 + dqadvdz*zf
+    qadv_mod = np.clip(qadv_mod, a_min=None, a_max=0)
+
+    lscale = np.stack((zf,u,v,zero,zero,zero,qadv_mod,zero)).T
     lscale_out = os.path.join(run_dir, 'lscale.inp.'+experiment)
     np.savetxt(lscale_out, lscale, fmt='%12.6g',
                header='\n    height           ug           vg         wfls      dqtdxls      dqtdyls      dqtdtls      dthlrad')
@@ -257,6 +268,7 @@ ensemble = []
 # cube center - note also intermediate latitude
 center = {v : (ranges[v][0] + ranges[v][1])/2 for v in ranges.keys()}
 center['Nc'] = Nc_default
+center['qadv0'] = 0
 ensemble.append(center)
 
 center_s = {
@@ -266,6 +278,8 @@ center_s = {
             'u0':       3.414611,
             'ujet':     2.896884,
             'Nc' :    Nc_default,
+            'lat' :          7.5,
+            'qadv0' :          0,
 }
 ensemble.append(center_s)
 
@@ -276,6 +290,8 @@ center_n = {
             'u0':       1.796379,
             'ujet':      6.52969,
             'Nc' :    Nc_default,
+            'lat' :         12.5,
+            'qadv0' :          0,
 }
 ensemble.append(center_n)
 
@@ -293,26 +309,42 @@ for lat in ranges['lat']:
                                 'u0': u0,
                                 'ujet' : ujet,
                                 'Nc' : Nc_default,
+                                'qadv0' : 0,
                                 }
                         ensemble.append(pars)
 
 
 # Add sweeps. For now only two points for each variable - min and max from the ranges.
+
+for var in (sweeps.keys()):
+    for val in sweeps[var]:
+        m = center.copy()
+        m[var] = val
+        ensemble.append(m)
+
+# sweep qadv0 (only one point)
+m = center.copy()
+m['qadv0'] = 7e-9
+ensemble.append(m)
+
+# Sweeps around the N and S domain centers - not done for now
 # lat is handled separately: each sweep point is added for the N and S domain
-for c in center_s, center_n: # for every sweep point, do it for N and S domains
-    for var in (sweeps.keys()):
-        if var != 'lat': # don't sweep latitude here
-            for val in sweeps[var]:
-                m = c.copy()
-                m[var] = val
-                ensemble.append(m)
+#for c in center_s, center_n: # for every sweep point, do it for N and S domains
+#    for var in (sweeps.keys()):
+#        if var != 'lat': # don't sweep latitude here
+#            for val in sweeps[var]:
+#                m = c.copy()
+#                m[var] = val
+#                ensemble.append(m)
+
+
 
 df = pd.DataFrame(ensemble)
 
 # if some sweeps added duplicate points, remove them now
 df.drop_duplicates(inplace=True)
 
-#print(df.to_string())
+print(df.to_string())
 df.to_csv(ensemble_path+'/parameters.csv')
 
 #generate profiles
