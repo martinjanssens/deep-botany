@@ -34,11 +34,13 @@ dzmax   = 500.
 
 # Parameter ranges, manually adjusted from values determined in Hypercube-designer.ipynb
 ## Second iteration of manual adjustments, after small cube attempt
+## Third iteration, with deeper stable layer and hqt replaced by rhft
 ranges = {
     'lat':      [7.5,   12.5],
     'thls':     [299,  301.5],
-    'dthllt':   [-0.5,   2.0],
-    'hqt':      [3000,  4750],
+    'dthllt':   [-2.0,   2.0],
+    # 'hqt':      [3000,  4750],
+    'rhft':     [0.35,   0.8],
     'u0':       [-5,      10],
     'ujet':     [0,       10],
 }
@@ -48,19 +50,27 @@ Nc_default = 100e6 # cloud drops per m3
 sweeps = ranges.copy()
 sweeps['Nc'] =  [20e6,    1000e6] # per m3
 
-# for the top of the domain, relax profiles back to the reference state using ERA5, which is
+# for the top of the domain, relax profiles back to the reference state using ERA5
 # - the southern domain mean upper troposphere for q/theta_l
-# - zero for u and v
-href_relax=9e3 # Relax to same profile in the upper troposphere, which we do not control
-hsca_relax=3e3
+# - zero for u/v
+# - thl is also fit upwards with the lapse rates from ERA5 southern, from its value at z0_extend_thl
+href_relax_thl=19e3
+hsca_relax_thl=3e3
+z0_extend_thl=7e3
+href_relax_qt=19e3
+hsca_relax_qt=3e3
 href_relax_u=19e3 # Above the tropopause, relax to zero
 hsca_relax_u=7e3
-
 
 ## Nudging (SECOND ATTEMPT - WEAKER NUDGING)
 tnudge_ft = 6 # hours
 lev_max_change = 15000 # m
 nudge_params = (10,4.622,5,lev_max_change,tnudge_ft*3600) # ~7 days over FT
+
+## Nudging of thl
+lev_max_change_thl = 10000 # m
+nudge_params_thl = (3,4.622,5.09,lev_max_change_thl,tnudge_ft*3600) # ~18 hours near the surface
+t_nudge_thl = _nudge_atan(zf,nudge_params_thl[0],nudge_params_thl[1],nudge_params_thl[2],nudge_params_thl[3],nudge_params_thl[4])
 
 nml_template = f90nml.read('namoptions.template')
 
@@ -189,22 +199,21 @@ era5_allplev['theta_l']  = (1e5/era5_allplev['pres'])**(2/7)*(era5_allplev['t'])
 era5_allplev_mn = era5_allplev.mean(['time','latitude','longitude'])
 era5_ref = era5_allplev_mn.copy(deep=True)
 
-# Interpolate pressure to model grid for RH calculations
-pres = (era5_allplev_mn['level']*100)
-pres_np = np.flip(np.append(pres.to_numpy(),ps_fixed))
-zm_np = np.flip(np.append(pres['zm'].to_numpy(), 0.))
-pres = xr.DataArray(data=pres_np, coords={'zm':zm_np})
-pres_zf = pres.interp(zm=zf,kwargs={"fill_value": "extrapolate"})
-
-
 create_backrad(data_path, ensemble_path)
 
 
 def compute_profiles(pars):
     thl = linml_sl(zf, pars['thls'], pars['dthllt'])
-    qt = exp_h_lt(zf, pars['hqt'])
+    thl = extend_thl(zf, thl, era5_ref['theta_l'], z0_extend_thl)
+    thl = relax(zf, thl, era5_ref['theta_l'], href_relax_thl, hsca_relax_thl)
+    
+    rh = rh_c(zf, pars['rhft'])
+    qt = qt_from_rh(zf, rh, thl)
+    qt = relax(zf, qt, era5_ref['q'], href_relax_qt, hsca_relax_qt)
+    
     u = linv_aej_fs(zf, pars['u0'], pars['ujet'])
-    thl, qt, u = relax_all(zf, thl, qt, u, era5_ref, href_relax, hsca_relax, href_relax_u, hsca_relax_u)
+    u = relax(zf, u, era5_ref['u']*0, href_relax_u, hsca_relax_u)
+    
     tke = 1 - zf/3000; tke[zf>=3000] = 0.
     return thl, qt, u, tke
 
@@ -239,6 +248,9 @@ def setup_run(ind, pars, experiment='001'):
     # nudge.inp
     nudge_profs = create_nudging(zf, thl, qt, u, v, nudge_params)
 
+    # Add separate thl nudging as the final column
+    nudge_profs = np.hstack((nudge_profs,t_nudge_thl.reshape(t_nudge_thl.size,1)))
+
     nudge_out = os.path.join(run_dir, 'nudge.inp.'+experiment)
     #f = open(nudge_out, 'w')
     #f.close()
@@ -246,9 +258,9 @@ def setup_run(ind, pars, experiment='001'):
     # Append two time instances - one at start, one after end of simulation
     with open(nudge_out, 'wb') as f:
         np.savetxt(f, nudge_profs, fmt='%+10.10e', comments='',
-                   header='\n      z (m)          factor (-)         u (m s-1)         v (m s-1)         w (m s-1)          thl (K)        qt (kg kg-1)    \n# 0.00000000E+00')
+                   header='\n      z (m)          factor (-)         u (m s-1)         v (m s-1)         w (m s-1)          thl (K)        qt (kg kg-1)        factor thl (-)    \n# 0.00000000E+00')
         np.savetxt(f, nudge_profs, fmt='%+10.10e', comments='',
-                   header='\n      z (m)          factor (-)         u (m s-1)         v (m s-1)         w (m s-1)          thl (K)        qt (kg kg-1)    \n# 1.00000000E+07')
+                   header='\n      z (m)          factor (-)         u (m s-1)         v (m s-1)         w (m s-1)          thl (K)        qt (kg kg-1)        factor thl (-)    \n# 1.00000000E+07')
 
 
     nml = nml_template.copy()
@@ -272,9 +284,10 @@ center['qadv0'] = 0
 ensemble.append(center)
 
 center_s = {
-            'thls':   299.926558,
-            'dthllt':   0.496936,
-            'hqt':    4059.26059,
+            'thls':   299.959967,
+            'dthllt':         -1,
+            # 'hqt':    4059.26059,
+            'rhft':          0.6,
             'u0':       3.414611,
             'ujet':     2.896884,
             'Nc' :    Nc_default,
@@ -284,9 +297,10 @@ center_s = {
 ensemble.append(center_s)
 
 center_n = {
-            'thls':   299.511256,
-            'dthllt':   2.354826,
-            'hqt':   3598.007748,
+            'thls':     299.5069,
+            'dthllt':        2.5,
+            # 'hqt':   3598.007748,
+            'rhft':         0.45,
             'u0':       1.796379,
             'ujet':      6.52969,
             'Nc' :    Nc_default,
@@ -299,14 +313,16 @@ ensemble.append(center_n)
 for lat in ranges['lat']:
     for thls in ranges['thls']:
         for dthllt in ranges['dthllt']:
-            for hqt in ranges['hqt']:
+            # for hqt in ranges['hqt']:
+            for rhft in ranges['rhft']:
                 for u0 in ranges['u0']:
                     for ujet in ranges['ujet']:
                         pars = {'lat' : lat,
                                 'thls' : thls,
                                 'dthllt' : dthllt,
-                                'hqt' : hqt,
-                                'u0': u0,
+                                # 'hqt' : hqt,
+                                'rhft' : rhft,
+                                'u0' : u0,
                                 'ujet' : ujet,
                                 'Nc' : Nc_default,
                                 'qadv0' : 0,
