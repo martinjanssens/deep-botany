@@ -253,7 +253,6 @@ def setup_run(ind, pars, experiment='001'):
 
     # Large-scale horizontal moisture advection
     qadv0 = pars['qadv0'] if 'qadv0' in pars else 0
-    print(f'qadv0 = {qadv0}')
     # qadv0 = 7e-9   # used 7e-9 in ensemble-2, now default to 0
     dqadvdz = qadv0/4000
     qadv_mod = -qadv0 + dqadvdz*zf
