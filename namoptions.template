@@ -2,7 +2,7 @@
 iexpnr     =  001
 lwarmstart = .false.
 startfile  = 'initd_latest_x000y000.001'
-runtime    = 172800
+runtime    = 43200
 trestart   = 0
 dtmax      = 5.
 ladaptive  = .true.
@@ -87,6 +87,7 @@ courantp   = 0.7
 /
 &NAMNUDGE
 lnudge   = .true.
+ltthlnudge = .true. ! enable tthlnudge column in ascii nudge input
 /
 &NAMCHECKSIM
 tcheck     = 0
