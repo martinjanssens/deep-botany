@@ -9,6 +9,8 @@ from profiles import *
 import utils
 import thermo
 import f90nml
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 Lv = 2.5e6
 cp = 1004.
@@ -31,6 +33,14 @@ r0      = 1.02
 zlow1max= 15e3
 r1      = 1.1
 dzmax   = 500.
+
+# plotting range
+zpltmax = 16e3
+
+# Plot settings
+cs = ['black',(0.6,0,1),(0.8,0,1,.9),'limegreen']
+lss = ['-','--']
+lws = [2.1, 0.4]
 
 # Parameter ranges, manually adjusted from values determined in Hypercube-designer.ipynb
 ## Second iteration of manual adjustments, after small cube attempt
@@ -70,7 +80,6 @@ nudge_params = (10,4.622,5,lev_max_change,tnudge_ft*3600) # ~7 days over FT
 ## Nudging of thl
 lev_max_change_thl = 10000 # m
 nudge_params_thl = (3,4.622,5.09,lev_max_change_thl,tnudge_ft*3600) # ~18 hours near the surface
-t_nudge_thl = _nudge_atan(zf,nudge_params_thl[0],nudge_params_thl[1],nudge_params_thl[2],nudge_params_thl[3],nudge_params_thl[4])
 
 nml_template = f90nml.read('namoptions.template')
 
@@ -189,6 +198,7 @@ def create_backrad(data_path, out_dir_rad, experiment='001'):
 
 # Set the grid
 zh, zf, = utils.make_grid(zlowmax, dzlow, nztot, r0, zlow1max, r1, dzmax=dzmax)
+izmax = np.where(zf<zpltmax)[0][-1]
 
 # Manually retrieved ERA5 from Copernicus (used for higher levels, which do not exist in HERA5 from DKRZ)
 era5_allplev = xr.open_dataset(data_path+'/era5_month_allplev_s.nc').sel(expver=1)
@@ -213,6 +223,15 @@ def compute_profiles(pars):
     
     u = linv_aej_fs(zf, pars['u0'], pars['ujet'])
     u = relax(zf, u, era5_ref['u']*0, href_relax_u, hsca_relax_u)
+
+    # Plot
+    axs[0].plot(thl[:izmax], zf[:izmax], color=cs[2], lw=lws[1])
+    axs[1].plot(qt[:izmax], zf[:izmax], color=cs[2], lw=lws[1])
+    axs[2].plot(u[:izmax], zf[:izmax], color=cs[2], lw=lws[1], label='Corners')
+
+    # Check RH
+    rh = rhProf(zf, thl, qt, ps_fixed)
+    ax_rh.plot(rh[:izmax], zf[:izmax], color=cs[2], lw=lws[1])
     
     tke = 1 - zf/3000; tke[zf>=3000] = 0.
     return thl, qt, u, tke
@@ -225,7 +244,7 @@ def setup_run(ind, pars, experiment='001'):
 
     thl, qt, u, tke = compute_profiles(pars)
     v = np.zeros_like(u)
-    prof = np.stack((zf,thl.to_numpy(),qt.to_numpy(),u.to_numpy(),zero,tke)).T
+    prof = np.stack((zf,thl,qt,u,zero,tke)).T
     profile_out = os.path.join(run_dir, 'prof.inp.'+experiment)
     np.savetxt(profile_out, prof, fmt='%12.6g',
                header='\n    height         thl          qt            u            v          TKE')
@@ -247,6 +266,7 @@ def setup_run(ind, pars, experiment='001'):
 
     # nudge.inp
     nudge_profs = create_nudging(zf, thl, qt, u, v, nudge_params)
+    t_nudge_thl = _nudge_atan(zf,nudge_params_thl[0],nudge_params_thl[1],nudge_params_thl[2],nudge_params_thl[3],nudge_params_thl[4])
 
     # Add separate thl nudging as the final column
     nudge_profs = np.hstack((nudge_profs,t_nudge_thl.reshape(t_nudge_thl.size,1)))
@@ -364,5 +384,29 @@ print(df.to_string())
 df.to_csv(ensemble_path+'/parameters.csv')
 
 #generate profiles
+fig, axs = plt.subplots(ncols=3,figsize=(20,10),sharey=True)
+fig_rh, ax_rh = plt.subplots(ncols=1,figsize=(5,5))
+
 for ind,m in df.iterrows():
     setup_run(ind, m)
+
+# Plot makeup
+axs[0].set_xlabel(r'$\theta_l$ [K]')
+axs[1].set_xlabel(r'$q_t$ [kg/kg]')
+axs[1].set_ylabel(r'')
+axs[2].set_xlabel(r'$u$ [m/s]')
+axs[2].set_ylabel(r'')
+for i in range(3):
+    axs[i].set_title(r'')
+sns.despine(fig, offset=0.5)
+handles, labels = axs[2].get_legend_handles_labels()
+labels, ids = np.unique(labels, return_index=True)
+handles = [handles[i] for i in ids]
+axs[2].legend(handles, labels, bbox_to_anchor=(1,1), loc='best')
+fig.savefig(ensemble_path+'/prof-test.pdf',bbox_inches='tight')
+
+ax_rh.set_xlabel('RH [%]')
+ax_rh.set_ylabel('Height [m]')
+ax_rh.set_title('')
+fig_rh.savefig(ensemble_path+'/prof-rh.pdf',bbox_inches='tight')
+
