@@ -216,11 +216,11 @@ def compute_profiles(pars):
     thl = linml_sl(zf, pars['thls'], pars['dthllt'])
     thl = extend_thl(zf, thl, era5_ref['theta_l'], z0_extend_thl)
     thl = relax(zf, thl, era5_ref['theta_l'], href_relax_thl, hsca_relax_thl)
-    
+
     rh = rh_c(zf, pars['rhft'])
     qt = qt_from_rh(zf, rh, thl)
     qt = relax(zf, qt, era5_ref['q'], href_relax_qt, hsca_relax_qt)
-    
+
     u = linv_aej_fs(zf, pars['u0'], pars['ujet'])
     u = relax(zf, u, era5_ref['u']*0, href_relax_u, hsca_relax_u)
 
@@ -232,7 +232,7 @@ def compute_profiles(pars):
     # Check RH
     rh = rhProf(zf, thl, qt, ps_fixed)
     ax_rh.plot(rh[:izmax], zf[:izmax], color=cs[2], lw=lws[1])
-    
+
     tke = 1 - zf/3000; tke[zf>=3000] = 0.
     return thl, qt, u, tke
 
@@ -289,6 +289,10 @@ def setup_run(ind, pars, experiment='001'):
     nml['DOMAIN']['xlat'] = pars['lat']
     nml['DEEPBOTANY'] = dict(pars)   # save a copy of the parameter dictionary in the namelist as an extra section
     nml['DEEPBOTANY']['index'] = ind  # ...and add the index
+
+    if 'cnstZenith' in pars and np.isfinite(pars['cnstZenith']) :
+        nml['NAMRADIATION']['lCnstZenith'] = True
+        nml['NAMRADIATION']['cnstZenith'] = pars['cnstZenith']
 
     nml.write(os.path.join(run_dir, 'namoptions.'+experiment), force=True)
 
@@ -373,6 +377,22 @@ ensemble.append(m)
 #                ensemble.append(m)
 
 
+# mapping from lat to constant zentih angle
+# linear interpolation between the values found for 7.5 and 12.5 deg
+# which were chosen to give approximately the same TOA incoming SW
+def zenith_from_lat(lat):
+    z1 = 71.2885397  # at lat =  7.5
+    z2 = 70.7508493  # at lat = 12.5
+    z = (lat-7.5)/(12.5-7.5) * (z2-z1) + z1
+    return z
+
+# add runs with constant zenith angle
+ensemble_cz = []
+for m in ensemble:
+    m = m.copy()
+    m['cnstZenith'] = zenith_from_lat(m['lat'])
+    ensemble_cz.append(m)
+ensemble += ensemble_cz
 
 df = pd.DataFrame(ensemble)
 
@@ -408,4 +428,3 @@ ax_rh.set_xlabel('RH [%]')
 ax_rh.set_ylabel('Height [m]')
 ax_rh.set_title('')
 fig_rh.savefig(ensemble_path+'/prof-rh.pdf',bbox_inches='tight')
-
