@@ -6,7 +6,7 @@ runtime    = 43200
 trestart   = 0
 dtmax      = 5.
 ladaptive  = .true.
-irandom    =  43
+irandom    =  -43
 krand      =  5
 randthl    =  0.1
 randqt     =  2.5e-5
@@ -72,6 +72,7 @@ iadv_sv    =  7
 /
 &NAMMICROPHYSICS
 imicro     = 5
+lstat      = .true.
 l_sb       = .true.
 l_sedc     = .true.
 l_rain     = .true.
@@ -103,11 +104,6 @@ ltendleib = .false.
 lprocblock = .true.
 ltenddec = .true.
 /
-&NAMBULKMICROSTAT
-lmicrostat = .true.
-timeav     = 600
-dtav       = 60.
-/
 !&NAMSIMPLEICESTAT
 !lmicrostat = .true.
 !timeav     = 1800
@@ -132,7 +128,7 @@ dtav       = 300
 &NAMGENSTAT
 lstat      = .true.
 dtav       = 60
-timeav     = 600
+timeav     = 300
 /
 &NAMSTATTEND
 dtav       = 30
@@ -141,7 +137,7 @@ ltend      = .false.
 &NAMRADSTAT
 lstat = .true.
 dtav = 60
-timeav = 600
+timeav = 300
 lradclearair = .true.
 /
 &NAMRADFIELD
@@ -152,19 +148,38 @@ timeav = 3600
 &NAMBUDGET
 lbudget = .false.
 dtav    = 60
-timeav  = 600.
+timeav  = 300.
 /
 &NAMNETCDFSTATS
 lnetcdf     = .true.
-lclassic    = .true.
+!lclassic    = .true.
+lparallel   = .true.
 lsync       = .false.
+/
+&NAMOUT1D
+lstat = .true.
+dtav = 1800
+lprocblock = .true.
 /
 &SOLVER
 solver_id = 100 ! FFTW
 /
+&NAMLSMCROSSSECTION
+lcross     = .true.
+dtav       = 3600
+/
 &NAMFIELDDUMP
-lfielddump  = .false.
+lfielddump  = .true.
 dtav        = 21600
+lu    = .true.
+lv    = .true.
+lw    = .true.
+lqt   = .true.
+lql   = .true.
+lthl  = .true.
+lbuoy = .false.
+lekm  = .true.
+khigh = 175    ! 15km
 /
 &TIMER
 ltimer = .true.
