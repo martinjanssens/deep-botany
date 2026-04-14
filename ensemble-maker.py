@@ -283,8 +283,8 @@ def setup_run(ind, pars, experiment='001'):
 
 
     nml = nml_template.copy()
-    nml['PHYSICS']['thls'] = pars['thls']
-    nml['PHYSICS']['ps'] = ps_fixed
+    nml['NAMSURFACE']['thls'] = pars['thls']
+    nml['NAMSURFACE']['ps'] = ps_fixed
     nml['NAMMICROPHYSICS']['Nc_0'] = pars['Nc']
     nml['DOMAIN']['xlat'] = pars['lat']
     nml['DEEPBOTANY'] = dict(pars)   # save a copy of the parameter dictionary in the namelist as an extra section

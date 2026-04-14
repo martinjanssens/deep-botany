@@ -35,13 +35,8 @@ xtime      = 0.0
 
 &PHYSICS
 igrw_damp  =  2
-lfast_thermo = .true.
 iradiation =  4
 timerad    =  60
-isurf      =  2
-ps         =  101339.5
-thls       =  299.9266
-ustin      =  0.32
 lcoriol    = .true.
 ltimedep   = .false.
 /
@@ -56,9 +51,10 @@ ch4_fraction  = 1879e-9
 n2o_fraction  = 332.8e-9
 /
 &NAMSURFACE
-!z0         =  1.6e-4 ! MJ: Roughness heights from Botany 
-!z0mav      =  1.6e-4
-!z0hav      =  3.2e-5
+isurf      =  2
+ps         =  101339.5
+thls       =  299.9266
+ustin      =  0.32
 z0mav      =  2e-4     ! Roughness heights from RCEMIP
 z0hav      =  2e-4
 albedoav   =  0.07
